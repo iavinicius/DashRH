@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dash Estratégico RH | Vinicius Carlos</title>
+    
+    <!-- Bibliotecas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #312E81; /* Indigo Deep Executive */
+            --bg-body: #F8FAFC;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --text-main: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        .top-header {
+            background-color: white; border-bottom: 1px solid #E2E8F0; padding: 0.75rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center; z-index: 50;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .brand-text { color: var(--primary); font-weight: 700; font-size: 1.1rem; }
+        .sub-brand { font-size: 0.65rem; color: #64748B; text-transform: uppercase; font-weight: 600; }
+        .dev-badge { font-size: 0.7rem; color: #94A3B8; font-weight: 500; text-align: right; }
+
+        /* --- Filters --- */
+        .filter-container {
+            background-color: white; padding: 0.75rem 1.5rem; border-bottom: 1px solid #E2E8F0;
+            display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: #F1F5F9; border: 1px solid transparent; color: #475569;
+            padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+            display: flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active { background: #E0E7FF; color: var(--primary); border-color: #C7D2FE; }
+        
+        .dropdown-menu {
+            display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white;
+            border: 1px solid #E2E8F0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 220px; max-height: 280px; overflow-y: auto; z-index: 60; padding: 4px;
+        }
+        .dropdown-menu.show { display: block; }
+        .checkbox-item {
+            padding: 6px 8px; font-size: 0.75rem; color: #334155; display: flex; align-items: center;
+            border-radius: 4px; cursor: pointer;
+        }
+        .checkbox-item:hover { background-color: #F8FAFC; }
+        .checkbox-item input { margin-right: 8px; accent-color: var(--primary); }
+
+        /* --- Layout --- */
+        .main-container { flex: 1; overflow-y: auto; padding: 1.5rem; scroll-behavior: smooth; }
+        .content-wrapper { max-width: 1400px; margin: 0 auto; padding-bottom: 3rem; }
+
+        /* --- Tabs --- */
+        .tabs-nav {
+            display: flex; gap: 1rem; border-bottom: 1px solid #E2E8F0; margin-bottom: 1.5rem;
+            overflow-x: auto; padding-bottom: 1px;
+        }
+        .tab-btn {
+            padding: 0.6rem 0; font-size: 0.85rem; font-weight: 500; color: #64748B;
+            border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+        /* --- Cards --- */
+        .card {
+            background: white; border-radius: 12px; padding: 1.25rem;
+            box-shadow: var(--card-shadow); border: 1px solid #F1F5F9;
+            display: flex; flex-direction: column; position: relative;
+        }
+        .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+        .kpi-title { font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.03em; }
+        .kpi-value { font-size: 1.75rem; font-weight: 700; color: #1E293B; line-height: 1.1; margin-bottom: 0.25rem; }
+        .kpi-sub { font-size: 0.7rem; color: #94A3B8; display: flex; align-items: center; gap: 4px; }
+        .kpi-formula { font-size: 0.65rem; color: #94A3B8; margin-top: 8px; border-top: 1px solid #F1F5F9; padding-top: 6px; font-style: italic; }
+
+        /* --- Tables --- */
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid #E2E8F0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th { background: #F8FAFC; color: #475569; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+        td { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; color: #334155; }
+        tr:hover td { background: #F8FAFC; }
+        
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .status-yes { background-color: #10B981; }
+        .status-no { background-color: #E2E8F0; }
+        .status-na { background-color: #94A3B8; }
+
+        /* Heatmap */
+        .heatmap-cell { text-align: center; color: white; font-weight: 600; text-shadow: 0 1px 1px rgba(0,0,0,0.1); border-radius: 4px; }
+        .grade-cell { background: #F1F5F9; color: #475569; font-weight: 700; text-align: center; }
+
+        /* Toggle Button */
+        .toggle-btn {
+            background-color: #E2E8F0; color: #64748B; border-radius: 20px; padding: 4px 12px;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; items-center; gap: 6px; transition: all 0.3s;
+        }
+        .toggle-btn.active { background-color: var(--primary); color: white; }
+        .toggle-circle { width: 8px; height: 8px; border-radius: 50%; background: white; }
+
+        /* Loading */
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="top-header">
+        <div class="flex items-center gap-4">
+            <div class="bg-indigo-50 p-2 rounded-lg text-indigo-700">
+                <i class="ph-fill ph-chart-polar text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="brand-text">Dash Estratégico RH</h1>
+                <p class="sub-brand">Processamento de Dados 100% Local</p>
+            </div>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleGlossary()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-bold transition">
+                    <i class="ph ph-book"></i> Glossário
+                </button>
+                <button onclick="exportFullReport()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition shadow-sm">
+                    <i class="ph ph-microsoft-excel-logo"></i> Baixar Relatório
+                </button>
+                <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm">
+                    <i class="ph ph-upload-simple"></i> Nova Carga
+                </button>
+            </div>
+            <p class="dev-badge">Desenvolvido por Vinicius Carlos</p>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="filter-container relative" id="filter-bar">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-2"><i class="ph-fill ph-funnel"></i> Filtros:</span>
+        <!-- JS Generates Filters -->
+    </div>
+
+    <!-- Main -->
+    <div class="main-container">
+        <div class="content-wrapper">
+            
+            <!-- Tabs -->
+            <nav class="tabs-nav">
+                <button onclick="switchTab('exec')" id="tab-exec" class="tab-btn active">Visão Executiva</button>
+                <button onclick="switchTab('work')" id="tab-work" class="tab-btn">Workforce</button>
+                <button onclick="switchTab('comp')" id="tab-comp" class="tab-btn">Compensação</button>
+                <button onclick="switchTab('ret')" id="tab-ret" class="tab-btn">Retenção</button>
+                <button onclick="switchTab('mov')" id="tab-mov" class="tab-btn">Movimentação</button>
+                <button onclick="switchTab('lid')" id="tab-lid" class="tab-btn">Liderança</button>
+                <button onclick="switchTab('des')" id="tab-des" class="tab-btn">Desenvolvimento</button>
+            </nav>
+
+            <!-- 1. Executiva -->
+            <div id="view-exec" class="view-section space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-5">
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Headcount</span><i class="ph ph-users text-indigo-300"></i></div>
+                        <h3 class="kpi-value" id="exec-hc">-</h3>
+                        <p class="kpi-sub" id="exec-hc-sub">Média Selecionada</p>
+                        <p class="kpi-formula">Média aritmética dos meses filtrados.</p>
+                    </div>
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Novas Contratações</span><i class="ph ph-user-plus text-blue-300"></i></div>
+                        <h3 class="kpi-value" id="exec-hires">-</h3>
+                        <p class="kpi-sub">Admissões</p>
+                         <p class="kpi-formula">Contagem de admissões no período.</p>
+                    </div>
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Turnover Geral</span><i class="ph ph-arrows-clockwise text-orange-300"></i></div>
+                        <h3 class="kpi-value text-orange-600" id="exec-turn">-</h3>
+                        <p class="kpi-sub">Média Móvel 3 Meses</p>
+                        <p class="kpi-formula">(Desligamentos / Média HC Trimestral) * 100</p>
+                    </div>
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Tempo de Casa</span><i class="ph ph-hourglass text-teal-300"></i></div>
+                        <h3 class="kpi-value" id="exec-tenure">-</h3>
+                        <p class="kpi-sub">Anos (Mediana)</p>
+                         <p class="kpi-formula">Mediana(Hoje - Data Admissão)</p>
+                    </div>
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Span of Control</span><i class="ph ph-tree-structure text-purple-300"></i></div>
+                        <h3 class="kpi-value" id="exec-span">-</h3>
+                        <p class="kpi-sub">Reportes / Líder</p>
+                         <p class="kpi-formula">Média de reportes diretos por gestor.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card col-span-2">
+                        <h3 class="kpi-title mb-4">Evolução do Headcount (12 Meses)</h3>
+                        <div class="h-64"><canvas id="chart-hc-evo"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Diversidade de Gênero</h3>
+                        <div class="h-64 flex justify-center"><canvas id="chart-gender"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Distribuição por Nível</h3>
+                        <div class="h-60"><canvas id="chart-layers"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Compa-Ratio (Competitividade)</h3>
+                        <div class="h-60 flex justify-center"><canvas id="chart-compa-donut"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Gerações</h3>
+                        <div class="h-60"><canvas id="chart-gen"></canvas></div>
+                        <p class="text-center text-[10px] text-gray-400 mt-2" id="avg-age-gen">Média Idade: -</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Workforce -->
+            <div id="view-work" class="view-section hidden space-y-6">
+                <!-- Workforce Disclaimer -->
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 flex items-start gap-3">
+                    <i class="ph-fill ph-info text-blue-600 mt-0.5 text-lg"></i>
+                    <div class="text-xs text-blue-800">
+                        <strong>Nota Metodológica:</strong> Os dados de Workforce são atualizados conforme as janelas de Orçamento e Forecast.
+                        Os números refletem apenas colaboradores <strong>efetivos</strong> (não inclui safristas, estagiários, aprendizes e afastados).
+                    </div>
+                </div>
+
+                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="card border-l-4 border-gray-400">
+                        <div class="kpi-header"><span class="kpi-title">HC Orçado (Plan)</span></div>
+                        <h3 class="kpi-value" id="wf-orc">-</h3>
+                    </div>
+                    <div class="card border-l-4 border-green-500">
+                        <div class="kpi-header"><span class="kpi-title">YTD Realizado (Orç)</span></div>
+                        <h3 class="kpi-value" id="wf-ytd-orc">-</h3>
+                    </div>
+                    <div class="card border-l-4 border-red-500">
+                        <div class="kpi-header"><span class="kpi-title">HC Não Orçado</span></div>
+                        <h3 class="kpi-value" id="wf-norc">-</h3>
+                    </div>
+                    <div class="card border-l-4 border-indigo-600">
+                        <div class="kpi-header"><span class="kpi-title">Total Geral</span></div>
+                        <h3 class="kpi-value" id="wf-total">-</h3>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="kpi-title">Posição de Vagas (Gap Analysis)</h3>
+                        <input type="text" placeholder="Buscar..." class="text-xs border p-1.5 rounded w-48" onkeyup="searchTable('wf-table', this.value)">
+                    </div>
+                    <div class="table-container max-h-[500px]">
+                        <table id="wf-table">
+                            <thead>
+                                <tr>
+                                    <th>Unidade</th><th>Área</th><th>Centro de Custo (CECO)</th>
+                                    <th>HC Orç.</th><th>YTD Orç.</th>
+                                    <th>HC N. Orç.</th><th>YTD N. Orç.</th>
+                                    <th>Total HC</th><th>Total YTD</th>
+                                    <th>Gap</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Compensação -->
+            <div id="view-comp" class="view-section hidden space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Mediana Compa-Ratio</span><i class="ph ph-currency-dollar text-indigo-300"></i></div>
+                        <h3 class="kpi-value text-indigo-700" id="comp-mediana">-</h3>
+                         <p class="kpi-formula">Mediana para evitar distorção de outliers.</p>
+                    </div>
+                    <div class="card col-span-2">
+                        <div class="kpi-header"><span class="kpi-title">Na Faixa (80% - 120%)</span><i class="ph ph-target text-green-300"></i></div>
+                         <div class="flex items-end gap-4">
+                            <h3 class="kpi-value text-green-600" id="comp-range-pct">-%</h3>
+                            <p class="pb-2 text-gray-500 text-sm font-medium" id="comp-range-abs">(- pessoas)</p>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Curva de Distribuição (Quartis Simplificados)</h3>
+                        <div class="h-64"><canvas id="chart-comp-dist"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Correlação: Tempo de Casa x Compa-Ratio</h3>
+                        <div class="h-64"><canvas id="chart-comp-scatter"></canvas></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <div class="card">
+                        <h3 class="kpi-title mb-4">Pay Equity Check (Gênero x Grade)</h3>
+                        <div class="h-64"><canvas id="chart-comp-equity"></canvas></div>
+                    </div>
+                     <div class="card">
+                        <h3 class="kpi-title mb-4">Matriz: Grade x Faixa (Resumida)</h3>
+                        <div class="table-container h-64 overflow-auto">
+                            <table class="w-full text-xs" id="comp-heatmap"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Retenção -->
+            <div id="view-ret" class="view-section hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="card border-l-4 border-red-500">
+                        <div class="kpi-header"><span class="kpi-title">Total Desligados</span></div>
+                        <h3 class="kpi-value" id="ret-total">-</h3>
+                    </div>
+                    <div class="card border-l-4 border-orange-500">
+                         <div class="kpi-header"><span class="kpi-title">Turnover Geral</span></div>
+                        <h3 class="kpi-value text-orange-600" id="ret-turn">-</h3>
+                        <p class="kpi-sub">Média Móvel 3 Meses</p>
+                        <p class="kpi-formula">(Desligamentos / Média HC Trimestral) * 100</p>
+                    </div>
+                    <div class="card border-l-4 border-yellow-500">
+                         <div class="kpi-header"><span class="kpi-title">Tempo Médio Permanência</span></div>
+                        <h3 class="kpi-value" id="ret-tenure">-</h3>
+                        <p class="kpi-sub">Anos (Longevidade)</p>
+                    </div>
+                    <div class="card border-l-4 border-purple-500">
+                        <div class="kpi-header"><span class="kpi-title">Perda Talento Crítico</span></div>
+                        <div class="flex items-baseline gap-2">
+                             <h3 class="kpi-value" id="ret-crit">-</h3>
+                             <span class="text-sm text-red-500 font-bold" id="ret-crit-pct">-%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card">
+                         <h3 class="kpi-title mb-4">Top 3 Motivos</h3>
+                         <div id="ret-top3" class="space-y-3"></div>
+                    </div>
+                    <div class="card col-span-2">
+                        <h3 class="kpi-title mb-4">Motivos de Saída (Pareto)</h3>
+                        <div class="h-64"><canvas id="chart-ret-reasons"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Tipo de Saída</h3>
+                        <div class="h-60 flex justify-center"><canvas id="chart-ret-type"></canvas></div>
+                    </div>
+                     <div class="card">
+                        <h3 class="kpi-title mb-4">Quem saiu? (Compa Ratio)</h3>
+                        <div class="h-60"><canvas id="chart-ret-profile"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Performance dos Desligados</h3>
+                        <div class="h-60"><canvas id="chart-ret-perf"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Movimentação -->
+            <div id="view-mov" class="view-section hidden space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Total Movimentos</span></div>
+                        <h3 class="kpi-value" id="mov-total">-</h3>
+                    </div>
+                    <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Talentos Críticos Mov.</span></div>
+                         <h3 class="kpi-value text-indigo-600" id="mov-crit">-</h3>
+                    </div>
+                     <div class="card">
+                        <div class="kpi-header"><span class="kpi-title">Sucessores Mov.</span></div>
+                         <h3 class="kpi-value text-green-600" id="mov-succ">-</h3>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card">
+                         <h3 class="kpi-title mb-4">Tipo de Movimento</h3>
+                         <ul id="mov-list-type" class="space-y-2 text-xs"></ul>
+                    </div>
+                    <div class="card col-span-2">
+                         <h3 class="kpi-title mb-4">Tendência Mensal</h3>
+                         <div class="h-64"><canvas id="chart-mov-trend"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="kpi-title">Analítico de Movimentos</h3>
+                        <input type="text" placeholder="Buscar..." class="text-xs border p-1.5 rounded w-48" onkeyup="searchTable('mov-table', this.value)">
+                    </div>
+                    <div class="table-container max-h-[400px] mb-4">
+                        <table id="mov-table">
+                            <thead><tr><th>Data</th><th>Nome</th><th>Talento</th><th>Tipo</th><th>Cargo Novo</th><th>Unidade</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <!-- Legenda Movimentos -->
+                    <div class="flex items-center gap-4 text-[10px] text-gray-500 border-t pt-2">
+                        <span class="font-bold">Legenda:</span>
+                        <span class="flex items-center gap-1"><i class="ph-bold ph-trend-up text-indigo-600"></i> Promoção</span>
+                        <span class="flex items-center gap-1"><i class="ph-bold ph-medal text-orange-500"></i> Mérito</span>
+                        <span class="flex items-center gap-1"><i class="ph-bold ph-arrows-left-right text-blue-500"></i> Lateral</span>
+                        <span class="flex items-center gap-1"><i class="ph-fill ph-star text-yellow-500"></i> Talento Crítico</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Liderança -->
+            <div id="view-lid" class="view-section hidden space-y-6">
+                <div class="flex justify-end mb-4">
+                    <button id="btn-grade12" class="toggle-btn" onclick="toggleGrade12()">
+                        <div class="toggle-circle"></div> <span>Apenas Grade 12+</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="card border-l-4 border-pink-500">
+                        <div class="kpi-header"><span class="kpi-title">Líderes em Ação Cultura</span></div>
+                        <h3 class="kpi-value" id="lid-cult">-</h3>
+                        <p class="kpi-sub" id="lid-cult-pct">-%</p>
+                    </div>
+                    <div class="card border-l-4 border-yellow-500">
+                        <div class="kpi-header"><span class="kpi-title">Líderes Critical Talent</span></div>
+                        <h3 class="kpi-value" id="lid-crit">-</h3>
+                         <p class="kpi-sub" id="lid-crit-pct">-%</p>
+                    </div>
+                    <div class="card border-l-4 border-green-500">
+                        <div class="kpi-header"><span class="kpi-title">Com PDI em Sistema</span></div>
+                        <h3 class="kpi-value" id="lid-pdi">-</h3>
+                         <p class="kpi-sub" id="lid-pdi-na">N/A: -</p>
+                    </div>
+                    <div class="card border-l-4 border-blue-500">
+                        <div class="kpi-header"><span class="kpi-title">Leader2Grow</span></div>
+                        <h3 class="kpi-value" id="lid-l2g">-</h3>
+                    </div>
+                </div>
+
+                <div class="card bg-orange-50 border-orange-200">
+                    <h3 class="kpi-title text-orange-800 mb-2">⚠️ Alerta: Líderes Críticos SEM PDI</h3>
+                    <div class="flex flex-wrap gap-2" id="lid-alert-list"></div>
+                </div>
+
+                <div class="card">
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="kpi-title">Analítico Liderança (Ordem Alfabética)</h3>
+                        <input type="text" placeholder="Buscar..." class="text-xs border p-1.5 rounded w-48" onkeyup="searchTable('lid-table', this.value)">
+                    </div>
+                     <div class="table-container max-h-[400px]">
+                        <table id="lid-table">
+                            <thead><tr><th>Nome</th><th>Área</th><th>Grade</th><th>Crítico</th><th>PDI</th><th>Cultura</th><th>L2G (Elegibilidade)</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center gap-4 text-[10px] text-gray-500 border-t pt-2 mt-2">
+                        <span class="font-bold">Legenda:</span>
+                        <span class="flex items-center gap-1"><span class="status-dot status-yes"></span> Sim/Participou</span>
+                        <span class="flex items-center gap-1"><span class="status-dot status-no"></span> Não/NA</span>
+                        <span class="flex items-center gap-1"><i class="ph-bold ph-prohibit text-gray-400"></i> Não Elegível</span>
+                        <span class="flex items-center gap-1"><i class="ph-fill ph-star text-yellow-500"></i> Talento</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Desenvolvimento -->
+            <div id="view-des" class="view-section hidden space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="card border-l-4 border-cyan-500">
+                        <div class="kpi-header"><span class="kpi-title">Colaboradores em Ações</span></div>
+                        <h3 class="kpi-value" id="dev-count">-</h3>
+                    </div>
+                     <div class="card border-l-4 border-indigo-500">
+                        <div class="kpi-header"><span class="kpi-title">Talentos Críticos Envolvidos</span></div>
+                        <h3 class="kpi-value" id="dev-crit">-</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Tipos de Ação</h3>
+                        <div class="h-64"><canvas id="chart-dev-type"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="kpi-title mb-4">Top Contextos</h3>
+                        <ul id="dev-context-list" class="space-y-2 text-xs"></ul>
+                    </div>
+                </div>
+
+                 <div class="card">
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="kpi-title">Analítico Desenvolvimento</h3>
+                        <input type="text" placeholder="Buscar..." class="text-xs border p-1.5 rounded w-48" onkeyup="searchTable('dev-table', this.value)">
+                    </div>
+                     <div class="table-container max-h-[400px]">
+                        <table id="dev-table">
+                            <thead><tr><th>Nome</th><th>Cargo</th><th>Área</th><th>Talento</th><th>Ação</th><th>Contexto</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Upload -->
+    <div id="upload-modal" class="loading-overlay hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 relative border border-gray-100">
+            <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 font-bold">&times;</button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="ph-fill ph-database"></i></div>
+                <h2 class="text-lg font-bold text-gray-800">Carregar Base de Dados</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-indigo-400 transition bg-slate-50">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase mb-2">Base 01 (Ativos, Deslig, Mov, Lid)</p>
+                    <input type="file" id="file-1" accept=".xlsx" class="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                 <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-indigo-400 transition bg-slate-50">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase mb-2">Base 02 (Desenv, Cultura, Workforce)</p>
+                    <input type="file" id="file-2" accept=".xlsx" class="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                <button onclick="processFiles()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg transition shadow-sm flex justify-center items-center gap-2 text-sm">
+                    <span id="btn-text">Processar Dados</span>
+                    <i class="ph ph-spinner animate-spin hidden" id="spinner"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glossary -->
+    <div id="glossary-modal" class="loading-overlay hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 relative border border-gray-100 max-h-[80vh] overflow-y-auto">
+            <button onclick="toggleGlossary()" class="absolute top-4 right-4 text-gray-400 font-bold">&times;</button>
+            <h2 class="text-lg font-bold text-indigo-800 mb-4 flex items-center gap-2"><i class="ph-fill ph-book-open"></i> Glossário</h2>
+            <div class="space-y-4 text-sm text-slate-600">
+                <div><h4 class="font-bold text-slate-800">Headcount (HC)</h4><p>Contagem total de colaboradores ativos no último dia do mês.</p></div>
+                <div><h4 class="font-bold text-slate-800">Turnover Geral</h4><p>Fórmula: ((Total Desligamentos) / Média HC dos últimos 3 meses) * 100.</p></div>
+                <div><h4 class="font-bold text-slate-800">Compa-Ratio</h4><p>Salário Atual / Ponto Médio da Faixa Salarial. Indica competitividade externa.</p></div>
+                <div><h4 class="font-bold text-slate-800">Talento Crítico</h4><p>Funcionários mapeados no 9box nas caixas 6, 8 e 9 (High Potential/Key Talent).</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        const State = {
+            raw: { ativos: [], deslig: [], mov: [], lid: [], desenv: [], cultura: [], workforce: [] },
+            filters: { hrbp: [], area: [], pais: [], org: [], mes: [] },
+            filtered: {}, charts: {},
+            grade12Only: false
+        };
+        const Colors = { indigo: '#312E81', blue: '#3B82F6', teal: '#14B8A6', red: '#EF4444', orange: '#F97316', green: '#10B981', purple: '#8B5CF6', slate: '#64748B' };
+
+        // --- PROCESSING ---
+        async function processFiles() {
+            const f1 = document.getElementById('file-1').files[0];
+            const f2 = document.getElementById('file-2').files[0];
+            if(!f1 && !f2) { alert("Selecione pelo menos um arquivo."); return; }
+
+            const btn = document.getElementById('btn-text');
+            const spin = document.getElementById('spinner');
+            btn.innerText = "Processando..."; spin.classList.remove('hidden');
+
+            const read = (f) => new Promise(resolve => {
+                if(!f) resolve({});
+                const r = new FileReader();
+                r.onload = (e) => {
+                    const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+                    const res = {};
+                    wb.SheetNames.forEach(n => res[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], {defval:""}));
+                    resolve(res);
+                };
+                r.readAsArrayBuffer(f);
+            });
+
+            try {
+                const [d1, d2] = await Promise.all([read(f1), read(f2)]);
+                if(d1['Ativos']) State.raw.ativos = d1['Ativos'];
+                if(d1['Desligamentos']) State.raw.deslig = d1['Desligamentos'];
+                if(d1['Movimentos']) State.raw.mov = d1['Movimentos'];
+                if(d1['Lideranca']) State.raw.lid = d1['Lideranca'];
+                if(d2['Desenvolvimento']) State.raw.desenv = d2['Desenvolvimento'];
+                if(d2['Cultura']) State.raw.cultura = d2['Cultura'];
+                if(d2['Workforce']) State.raw.workforce = d2['Workforce'];
+                if(d1['Workforce']) State.raw.workforce = d1['Workforce']; // Fallback
+                if(d2['Ativos']) State.raw.ativos = d2['Ativos']; // Fallback
+
+                document.getElementById('upload-modal').classList.add('hidden');
+                initFilters();
+            } catch (e) { alert("Erro ao ler arquivos."); console.error(e); } 
+            finally { btn.innerText = "Processar Dados"; spin.classList.add('hidden'); }
+        }
+
+        // --- EXPORT FUNCTION ---
+        function exportFullReport() {
+            if(!State.raw.ativos.length) { alert("Carregue os dados primeiro."); return; }
+            
+            const wb = XLSX.utils.book_new();
+
+            // 1. Executive Summary (Simplified)
+            const kpis = [
+                { Indicador: "Headcount Médio", Valor: document.getElementById('exec-hc').innerText },
+                { Indicador: "Turnover Geral", Valor: document.getElementById('exec-turn').innerText },
+                { Indicador: "Contratações", Valor: document.getElementById('exec-hires').innerText },
+                { Indicador: "Tempo Casa (Anos)", Valor: document.getElementById('exec-tenure').innerText }
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kpis), "Resumo Executivo");
+
+            // 2. Data Sheets (Filtered)
+            const addToWb = (name, data) => {
+                if(data && data.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), name);
+            }
+
+            addToWb("Analítico Ativos", State.filtered.ativos);
+            addToWb("Analítico Desligamentos", State.filtered.deslig);
+            addToWb("Movimentações", State.filtered.mov);
+            addToWb("Workforce Gap", State.filtered.workforce);
+            addToWb("Liderança", State.filtered.lid);
+            addToWb("Desenvolvimento", State.filtered.desenv);
+
+            XLSX.writeFile(wb, "Relatorio_Estrategico_RH.xlsx");
+        }
+
+        function toggleGlossary() { document.getElementById('glossary-modal').classList.toggle('hidden'); }
+
+        // --- FILTERS ---
+        function initFilters() {
+            const months = [...new Set(State.raw.ativos.map(r => fmtDate(r['MÊS'])))].sort().reverse();
+            State.filters.mes = [months[0]];
+            
+            const keys = [['HRBP','hrbp'], ['ÁREA','area'], ['PAÍS','pais'], ['ORG UNIT','org'], ['MÊS REF','mes']];
+            const bar = document.getElementById('filter-bar');
+            while (bar.children.length > 1) bar.removeChild(bar.lastChild);
+
+            keys.forEach(([lbl, k]) => {
+                const div = document.createElement('div'); div.className = 'relative';
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn'; btn.id = `btn-${k}`;
+                btn.innerHTML = `<span>${lbl}: <span id="lbl-${k}" class="font-normal text-xs ml-1">Todos</span></span><i class="ph-bold ph-caret-down"></i>`;
+                btn.onclick = (e) => { e.stopPropagation(); toggleDropdown(k); };
+                
+                const dd = document.createElement('div'); dd.className = 'dropdown-menu'; dd.id = `dd-${k}`;
+                div.appendChild(btn); div.appendChild(dd); bar.appendChild(div);
+            });
+
+            const clear = document.createElement('button');
+            clear.className = 'text-xs text-red-500 font-bold hover:bg-red-50 px-2 py-1 rounded ml-auto';
+            clear.innerText = 'LIMPAR';
+            clear.onclick = () => { State.filters = { hrbp: [], area: [], pais: [], org: [], mes: [months[0]] }; applyFilters(); };
+            bar.appendChild(clear);
+
+            applyFilters();
+            window.onclick = () => document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('show'));
+        }
+
+        function toggleDropdown(key) {
+            document.querySelectorAll('.dropdown-menu').forEach(d => { if(d.id !== `dd-${key}`) d.classList.remove('show'); });
+            const dd = document.getElementById(`dd-${key}`);
+            const opts = getCascadeOptions(key);
+            
+            dd.innerHTML = '<div class="checkbox-item font-bold text-indigo-600 border-b mb-1" onclick="toggleAll(\''+key+'\', '+opts.length+')">(Todos)</div>';
+            opts.forEach(val => {
+                const checked = State.filters[key].includes(val);
+                dd.innerHTML += `<label class="checkbox-item"><input type="checkbox" ${checked?'checked':''} onchange="handleSel('${key}','${val}',this.checked)"> ${val}</label>`;
+            });
+            dd.classList.toggle('show');
+        }
+
+        function toggleAll(key, total) {
+             const opts = getCascadeOptions(key);
+             State.filters[key] = (State.filters[key].length === total && total > 0) ? [] : opts;
+             applyFilters();
+        }
+
+        function handleSel(key, val, checked) {
+            if(checked) State.filters[key].push(val);
+            else State.filters[key] = State.filters[key].filter(v=>v!==val);
+            applyFilters();
+        }
+
+        function getCascadeOptions(targetKey) {
+            let d = State.raw.ativos;
+            const f = State.filters;
+            if(targetKey!=='mes' && f.mes.length) d = d.filter(r=>f.mes.includes(fmtDate(r['MÊS'])));
+            if(targetKey!=='pais' && f.pais.length) d = d.filter(r=>f.pais.includes(r['PAIS']));
+            if(targetKey!=='org' && f.org.length) d = d.filter(r=>f.org.includes(r['ORG_UNIT']));
+            if(targetKey!=='area' && f.area.length) d = d.filter(r=>f.area.includes(r['AREA']));
+            if(targetKey!=='hrbp' && f.hrbp.length) d = d.filter(r=>f.hrbp.includes(r['HRBP']));
+
+            const map = { 'mes':'MÊS', 'hrbp':'HRBP', 'pais':'PAIS', 'area':'AREA', 'org':'ORG_UNIT' };
+            return [...new Set(d.map(r=> targetKey==='mes'?fmtDate(r[map[targetKey]]):r[map[targetKey]]))].filter(x=>x).sort();
+        }
+
+        function applyFilters() {
+            Object.keys(State.filters).forEach(k => {
+                const len = State.filters[k].length;
+                const el = document.getElementById(`lbl-${k}`);
+                const btn = document.getElementById(`btn-${k}`);
+                if(len===0) { el.innerText="Todos"; btn.classList.remove('active'); }
+                else { el.innerText = len > 1 ? `(${len})` : State.filters[k][0]; btn.classList.add('active'); }
+            });
+
+            const check = (r, dateCol) => {
+                const f = State.filters;
+                if(f.pais.length && !f.pais.includes(r['PAIS'])) return false;
+                if(f.org.length && !f.org.includes(r['ORG_UNIT'])) return false;
+                if(f.hrbp.length && !f.hrbp.includes(r['HRBP'])) return false;
+                if(f.area.length && !f.area.includes(r['AREA'])) return false;
+                if(dateCol && f.mes.length && !f.mes.includes(fmtDate(r[dateCol]))) return false;
+                return true;
+            };
+
+            State.filtered.ativos = State.raw.ativos.filter(r => check(r, 'MÊS'));
+            State.filtered.deslig = State.raw.deslig.filter(r => check(r, 'DATA_DESLIG'));
+            State.filtered.mov = State.raw.mov.filter(r => check(r, 'DATA_MOV'));
+            State.filtered.lid = State.raw.lid.filter(r => check(r, null));
+            State.filtered.desenv = State.raw.desenv.filter(r => check(r, 'MÊS'));
+            State.filtered.workforce = State.raw.workforce.filter(r => check(r, null));
+            State.filtered.hist = State.raw.ativos.filter(r => check(r, null));
+
+            updateDashboard();
+        }
+
+        function toggleGrade12() {
+            State.grade12Only = !State.grade12Only;
+            const btn = document.getElementById('btn-grade12');
+            if(State.grade12Only) btn.classList.add('active'); else btn.classList.remove('active');
+            renderLideranca();
+        }
+
+        function updateDashboard() {
+            renderExec(); renderWorkforce(); renderComp(); renderRetencao(); renderMov(); renderLideranca(); renderDesenv();
+        }
+
+        // 1. Executiva
+        function renderExec() {
+            const d = State.filtered.ativos;
+            const avgHC = Math.round(d.length / (State.filters.mes.length||1));
+            setVal('exec-hc', avgHC);
+
+            const hires = d.filter(r => State.filters.mes.includes(fmtDate(r['DATA_ADM']))).length;
+            setVal('exec-hires', hires);
+
+            const terms = State.filtered.deslig.length;
+            const turn = avgHC > 0 ? ((terms/avgHC)*100).toFixed(1) : 0;
+            setVal('exec-turn', turn+'%');
+            setVal('ret-turn', turn+'%'); 
+
+            const tenures = d.map(r => (new Date() - new Date(r['DATA_ADM']))/3.154e10).sort((a,b)=>a-b);
+            const medTenure = tenures.length ? tenures[Math.floor(tenures.length/2)].toFixed(1) : 0;
+            setVal('exec-tenure', medTenure);
+
+            const evoMap = {};
+            State.filtered.hist.forEach(r => { const m = fmtDate(r['MÊS']); evoMap[m] = (evoMap[m]||0)+1; });
+            const evoKeys = Object.keys(evoMap).sort().slice(-12);
+            renderChart('chart-hc-evo', 'line', evoKeys, evoKeys.map(k=>evoMap[k]), Colors.indigo, {labels:true});
+
+            const leaders = {};
+            d.forEach(r => { if(r['LIDER_DIRETO']) leaders[r['LIDER_DIRETO']] = (leaders[r['LIDER_DIRETO']]||0)+1; });
+            const spans = Object.values(leaders);
+            setVal('exec-span', spans.length ? (spans.reduce((a,b)=>a+b,0)/spans.length).toFixed(1) : 0);
+
+            const gMap = {M:0, F:0}; d.forEach(r=> { const g=String(r['GENERO'])[0]; if(gMap[g]!==undefined) gMap[g]++; });
+            renderChart('chart-gender', 'doughnut', ['Masculino','Feminino'], [gMap.M, gMap.F], [Colors.blue, Colors.orange]);
+
+            const lMap = {'Estratégico':0,'Tático':0,'Operacional':0};
+            d.forEach(r => { const g=parseInt(r['GRADE']); if(g>=12) lMap['Estratégico']++; else if(g>=6) lMap['Tático']++; else lMap['Operacional']++; });
+            renderChart('chart-layers', 'bar', Object.keys(lMap), Object.values(lMap), [Colors.purple, Colors.indigo, Colors.teal]);
+
+            const cMap = {'<80%':0, '80-120%':0, '>120%':0};
+            d.forEach(r => { const c=parseFloat(r['COMPARATIO']); if(c<0.8) cMap['<80%']++; else if(c>1.2) cMap['>120%']++; else cMap['80-120%']++; });
+            renderChart('chart-compa-donut', 'doughnut', Object.keys(cMap), Object.values(cMap), [Colors.red, Colors.green, Colors.orange]);
+
+            const genMap = {}; let ageSum=0, c=0;
+            d.forEach(r => {
+                const y=new Date(r['DATA_NAS']).getFullYear();
+                if(y) {
+                    ageSum += (new Date().getFullYear()-y); c++;
+                    const g = y>=1997?'Gen Z':y>=1981?'Millennials':y>=1965?'Gen X':'Boomers';
+                    genMap[g] = (genMap[g]||0)+1;
+                }
+            });
+            renderChart('chart-gen', 'bar', Object.keys(genMap), Object.values(genMap), Colors.orange);
+            document.getElementById('avg-age-gen').innerText = `Idade Média: ${c?Math.round(ageSum/c):'-'} anos`;
+        }
+
+        // 2. Workforce
+        function renderWorkforce() {
+            const d = State.filtered.workforce;
+            const sum = (k) => d.reduce((a,b)=>a+(parseFloat(b[k])||0),0);
+            const orc = sum('HC_ORC'); const norc = sum('HC_NORC'); const ytdO = sum('YTD_ORC'); const ytdN = sum('YTD_NORC');
+            setVal('wf-orc', orc); setVal('wf-norc', norc); setVal('wf-ytd-orc', ytdO); setVal('wf-total', ytdO+ytdN);
+
+            const tb = document.querySelector('#wf-table tbody'); tb.innerHTML = '';
+            d.forEach(r => {
+                const tot = (r['HC_ORC']||0)+(r['HC_NORC']||0); const ytd = (r['YTD_ORC']||0)+(r['YTD_NORC']||0); const gap = tot-ytd;
+                tb.innerHTML += `<tr><td>${r['ORG_UNIT']}</td><td>${r['AREA']}</td><td>${r['CECO']||'-'}</td>
+                    <td>${r['HC_ORC']}</td><td>${r['YTD_ORC']}</td><td>${r['HC_NORC']}</td><td>${r['YTD_NORC']}</td>
+                    <td class="font-bold">${tot}</td><td class="font-bold">${ytd}</td><td class="font-bold ${gap>0?'text-green-600':gap<0?'text-red-600':'text-gray-400'}">${gap>0?'+':''}${gap}</td></tr>`;
+            });
+        }
+
+        // 3. Compensação
+        function renderComp() {
+            const map = new Map();
+            State.filtered.ativos.forEach(r => map.set(r['ID'], r));
+            const d = Array.from(map.values()).filter(r => r['COMPARATIO']);
+
+            const vals = d.map(r=>parseFloat(r['COMPARATIO'])).sort((a,b)=>a-b);
+            const med = vals[Math.floor(vals.length/2)];
+            setVal('comp-mediana', med?med.toFixed(2):'-');
+            
+            const inR = d.filter(r=>r['COMPARATIO']>=0.8 && r['COMPARATIO']<=1.2).length;
+            setVal('comp-range-pct', vals.length?Math.round(inR/vals.length*100)+'%':'-');
+            document.getElementById('comp-range-abs').innerText = `(${inR} pessoas)`;
+
+            const buckets = {'<80%':0, '80-90%':0, '90-100%':0, '100-110%':0, '110-120%':0, '>120%':0};
+            vals.forEach(v => {
+                if(v<0.8) buckets['<80%']++;
+                else if(v<0.9) buckets['80-90%']++;
+                else if(v<1.0) buckets['90-100%']++;
+                else if(v<1.1) buckets['100-110%']++;
+                else if(v<=1.2) buckets['110-120%']++;
+                else buckets['>120%']++;
+            });
+            renderChart('chart-comp-dist', 'line', Object.keys(buckets), Object.values(buckets), Colors.indigo, {fill:true, tension:0.4});
+
+            const scat = d.map(r=>({x:(new Date()-new Date(r['DATA_ADM']))/3.154e10, y:parseFloat(r['COMPARATIO'])})).filter(p=>p.x<30 && p.y<2);
+            renderChart('chart-comp-scatter', 'scatter', [], scat, Colors.indigo);
+
+            // Pay Equity (Numeric Grades Sort > 3)
+            const eqMap = {}; 
+            d.forEach(r => {
+                const gr = parseInt(r['GRADE']);
+                if(!eqMap[gr]) eqMap[gr] = {M_sum:0, M_count:0, F_sum:0, F_count:0};
+                const c = parseFloat(r['COMPARATIO']);
+                const g = String(r['GENERO'])[0];
+                if(g==='M') { eqMap[gr].M_sum+=c; eqMap[gr].M_count++; }
+                else if(g==='F') { eqMap[gr].F_sum+=c; eqMap[gr].F_count++; }
+            });
+            
+            // Sort Grades Descending (Inverted from V17)
+            const grades = Object.keys(eqMap).map(Number).filter(g => g >= 4).sort((a,b) => b - a);
+
+            const mData = grades.map(g => eqMap[g].M_count ? (eqMap[g].M_sum/eqMap[g].M_count)*100 : 0);
+            const fData = grades.map(g => eqMap[g].F_count ? (eqMap[g].F_sum/eqMap[g].F_count)*100 : 0);
+            
+            const ctxEq = document.getElementById('chart-comp-equity');
+            if(State.charts.eq) State.charts.eq.destroy();
+            State.charts.eq = new Chart(ctxEq, {
+                type: 'bar',
+                data: { labels: grades, datasets: [
+                    {label:'Masc', data:mData, backgroundColor:Colors.blue},
+                    {label:'Fem', data:fData, backgroundColor:Colors.orange}
+                ]},
+                options: { 
+                    responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom'} },
+                    scales:{
+                        x: { title: { display: true, text: 'Grade (Nível Hierárquico)', font: {size: 10, weight: 'bold'} } },
+                        y: {
+                            beginAtZero:false, min:60, max:140, 
+                            ticks:{ stepSize: 20, callback:(v)=>v+'%' }, 
+                            title: { display: true, text: '% da Faixa Salarial (Média)', font: {size: 10, weight: 'bold'} },
+                            grid: { color: (ctx) => [80,120].includes(ctx.tick.value) ? '#94A3B8' : '#E2E8F0', lineWidth: (ctx) => [80,120].includes(ctx.tick.value) ? 2 : 1 }
+                        }
+                    } 
+                }
+            });
+
+            // Heatmap (3 Buckets)
+            const ranges = ['<80%', '80-120%', '>120%'];
+            let html = `<thead><tr><th class="bg-gray-100">Grade</th>${ranges.map(r=>`<th>${r}</th>`).join('')}</tr></thead><tbody>`;
+            grades.sort((a,b)=>b-a).forEach(g => {
+                const totalInGrade = d.filter(r=>parseInt(r['GRADE'])==g).length;
+                html += `<tr><td class="grade-cell">${g}</td>`;
+                ranges.forEach((rng, idx) => {
+                    let c = d.filter(r=>{
+                        const v=parseFloat(r['COMPARATIO']); const gr=parseInt(r['GRADE']);
+                        if(gr!=g) return false;
+                        if(idx===0) return v<0.8; 
+                        if(idx===1) return v>=0.8 && v<=1.2;
+                        return v>1.2;
+                    }).length;
+                    const pct = totalInGrade ? Math.round(c/totalInGrade*100) : 0;
+                    const bg = `rgba(49, 46, 129, ${c > 0 ? Math.max(0.2, pct/80) : 0})`;
+                    html += `<td class="heatmap-cell" style="background:${bg}; color:${pct>40?'white':'#1e293b'}">${pct}%</td>`;
+                });
+                html += '</tr>';
+            });
+            document.getElementById('comp-heatmap').innerHTML = html + '</tbody>';
+        }
+
+        // 4. Retenção
+        function renderRetencao() {
+            const d = State.filtered.deslig;
+            setVal('ret-total', d.length);
+            
+            const tenure = d.map(r => (new Date(r['DATA_DESLIG']) - new Date(r['DATA_ADM']))/3.154e10);
+            setVal('ret-tenure', tenure.length ? (tenure.reduce((a,b)=>a+b,0)/tenure.length).toFixed(1) : 0);
+
+            const crit = d.filter(r => isCritical(r)).length;
+            setVal('ret-crit', crit); setTxt('ret-crit-pct', d.length?Math.round(crit/d.length*100)+'%':'-');
+
+            const reasons = countBy(d, 'MOTIVO_DESLIG');
+            const sorted = Object.entries(reasons).sort((a,b)=>b[1]-a[1]);
+            const top3Div = document.getElementById('ret-top3'); top3Div.innerHTML = '';
+            sorted.slice(0,3).forEach(([k,v], i) => {
+                top3Div.innerHTML += `<div class="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-100">
+                    <span class="text-xs font-bold text-slate-700 truncate w-3/4"><span class="text-indigo-500 mr-2">#${i+1}</span>${k}</span>
+                    <span class="font-bold text-slate-900">${v}</span>
+                </div>`;
+            });
+            renderChart('chart-ret-reasons', 'bar', sorted.slice(0,8).map(x=>x[0]), sorted.slice(0,8).map(x=>x[1]), Colors.red, {axis:'y'});
+
+            const types = countBy(d, 'TIPO_DESLIG');
+            renderChart('chart-ret-type', 'doughnut', Object.keys(types), Object.values(types), [Colors.blue, Colors.orange]);
+
+            const compaBuckets = {'<80%':0, '80-120%':0, '>120%':0};
+            d.forEach(r => { const c=parseFloat(r['COMPARATIO']); if(c<0.8) compaBuckets['<80%']++; else if(c>1.2) compaBuckets['>120%']++; else compaBuckets['80-120%']++; });
+            renderChart('chart-ret-profile', 'bar', Object.keys(compaBuckets), Object.values(compaBuckets), Colors.indigo);
+
+            const perfMap = {'Alta':0, 'Média':0, 'Baixa':0};
+            d.forEach(r => {
+                const p = String(r['CATEGORIA_PERFORMANCE']).toLowerCase();
+                if(p.includes('supera') || p.includes('referência')) perfMap['Alta']++;
+                else if(p.includes('parcial') || p.includes('abaixo')) perfMap['Baixa']++;
+                else perfMap['Média']++;
+            });
+            renderChart('chart-ret-perf', 'pie', Object.keys(perfMap), Object.values(perfMap), [Colors.green, Colors.blue, Colors.red]);
+        }
+
+        // 5. Movimentação
+        function renderMov() {
+            const d = State.filtered.mov;
+            setVal('mov-total', d.length);
+            setVal('mov-crit', d.filter(r=>isCritical(r)).length);
+            setVal('mov-succ', d.filter(r=>String(r['SUCESSOR_MAPEADO']).toUpperCase().includes('SI')).length);
+
+            const types = countBy(d, 'TIPO_MOV');
+            const ul = document.getElementById('mov-list-type'); ul.innerHTML = '';
+            Object.entries(types).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => 
+                ul.innerHTML += `<li class="flex justify-between border-b border-dashed py-1"><span>${k}</span><b>${v}</b></li>`);
+
+            const trend = {}; d.forEach(r => { const m=fmtDate(r['DATA_MOV']); trend[m]=(trend[m]||0)+1; });
+            const keys = Object.keys(trend).sort();
+            renderChart('chart-mov-trend', 'line', keys, keys.map(k=>trend[k]), Colors.teal, {labels:true});
+
+            const tb = document.querySelector('#mov-table tbody'); tb.innerHTML = '';
+            d.forEach(r => {
+                const isCrit = isCritical(r);
+                const star = isCrit ? '<i class="ph-fill ph-star star-icon"></i>' : '';
+                
+                let iconType = '<i class="ph-bold ph-arrow-right text-gray-400"></i>';
+                const type = String(r['TIPO_MOV']).toLowerCase();
+                let typeColor = 'text-gray-600';
+
+                if(type.includes('promo')) { iconType = '<i class="ph-bold ph-trend-up"></i>'; typeColor='text-indigo-600'; }
+                else if(type.includes('mérito')) { iconType = '<i class="ph-bold ph-medal"></i>'; typeColor='text-orange-500'; }
+                else if(type.includes('lateral')) { iconType = '<i class="ph-bold ph-arrows-left-right"></i>'; typeColor='text-blue-500'; }
+
+                tb.innerHTML += `<tr>
+                    <td>${fmtDate(r['DATA_MOV'])}</td>
+                    <td>${r['DISPLAY_NAME']}</td>
+                    <td class="text-center">${star}</td>
+                    <td class="flex items-center gap-2 font-bold ${typeColor}">${iconType} ${r['TIPO_MOV']}</td>
+                    <td>${r['CARGO']}</td>
+                    <td>${r['ORG_UNIT']}</td>
+                </tr>`;
+            });
+        }
+
+        // 6. Liderança
+        function renderLideranca() {
+            let d = State.filtered.lid;
+            if(State.grade12Only) {
+                d = d.filter(r => parseInt(r['GRADE']) >= 12);
+            }
+
+            const tot = d.length||1;
+            const crit = d.filter(r=>isCritical(r));
+            
+            const cult = d.filter(r=>String(r['AÇÃO_CULTURA']).toUpperCase().includes('SI')).length;
+            setVal('lid-cult', cult); setTxt('lid-cult-pct', Math.round(cult/tot*100)+'%');
+            setVal('lid-crit', crit.length); setTxt('lid-crit-pct', Math.round(crit.length/tot*100)+'%');
+            
+            const pdi = d.filter(r=>String(r['PDI_SISTEMA']).toUpperCase().includes('SI')).length;
+            setVal('lid-pdi', pdi); 
+
+            setVal('lid-l2g', d.filter(r=>String(r['LEADER_TO_GROW']).toUpperCase().includes('SI')).length);
+
+            const alerts = crit.filter(r => !String(r['PDI_SISTEMA']).toUpperCase().includes('SI'));
+            const alDiv = document.getElementById('lid-alert-list'); alDiv.innerHTML = alerts.length?'':'<span class="text-xs text-gray-400">Nenhum</span>';
+            alerts.forEach(r => alDiv.innerHTML += `<span class="bg-orange-100 text-orange-800 text-[10px] px-2 py-1 rounded font-bold border border-orange-200">${r['DISPLAY_NAME']}</span>`);
+
+            const tb = document.querySelector('#lid-table tbody'); tb.innerHTML = '';
+            
+            // Sort Alphabetically
+            d.sort((a,b) => (a['DISPLAY_NAME']||'').localeCompare(b['DISPLAY_NAME']||''));
+
+            d.forEach(r => {
+                 const star = isCritical(r) ? '<i class="ph-fill ph-star star-icon"></i>' : '';
+                 const check = (val) => String(val).toUpperCase().includes('SI') 
+                    ? '<span class="status-dot status-yes"></span>' 
+                    : '<span class="status-dot status-no"></span>';
+                 
+                 // L2G Logic
+                 const l2gVal = String(r['LEADER_TO_GROW']).toUpperCase();
+                 let l2gIcon = '<span class="status-dot status-no"></span>';
+                 if(l2gVal.includes('SI')) l2gIcon = '<span class="status-dot status-yes"></span>';
+                 else if(l2gVal.includes('ELEG')) l2gIcon = '<i class="ph-bold ph-prohibit text-gray-400"></i>';
+
+                 tb.innerHTML += `<tr>
+                    <td>${r['DISPLAY_NAME']}</td>
+                    <td>${r['AREA']}</td>
+                    <td>${r['GRADE']}</td>
+                    <td class="text-center">${star}</td>
+                    <td>${check(r['PDI_SISTEMA'])}</td>
+                    <td>${check(r['AÇÃO_CULTURA'])}</td>
+                    <td class="text-center">${l2gIcon}</td>
+                </tr>`;
+            });
+        }
+
+        // 7. Desenvolvimento
+        function renderDesenv() {
+            const d = State.filtered.desenv;
+            setVal('dev-count', d.length);
+            setVal('dev-crit', d.filter(r=>isCritical(r)).length);
+
+            const types = countBy(d, 'ACAO_DESENVOL');
+            renderChart('chart-dev-type', 'bar', Object.keys(types), Object.values(types), Colors.purple, {axis:'y'});
+
+            const ctxs = countBy(d, 'CONTEXTO');
+            const ul = document.getElementById('dev-context-list'); ul.innerHTML = '';
+            Object.entries(ctxs).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([k,v]) => 
+                ul.innerHTML += `<li class="flex justify-between py-1 border-b border-dashed"><span class="truncate w-3/4" title="${k}">${k}</span><b>${v}</b></li>`);
+
+            const tb = document.querySelector('#dev-table tbody'); tb.innerHTML = '';
+            d.forEach(r => {
+                 const star = isCritical(r) ? '<i class="ph-fill ph-star star-icon"></i>' : '';
+                 tb.innerHTML += `<tr><td>${star}${r['DISPLAY_NAME']}</td><td>${r['CARGO']}</td><td>${r['AREA']}</td><td>${r['CRITICAL_TALENT']}</td><td>${r['ACAO_DESENVOL']}</td><td>${r['CONTEXTO']}</td></tr>`;
+            });
+        }
+
+        // --- UTILS ---
+        function switchTab(id) {
+            document.querySelectorAll('.view-section').forEach(e=>e.classList.add('hidden'));
+            document.getElementById('view-'+id).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        function renderChart(id, type, labels, data, colors, opts={}) {
+            const ctx = document.getElementById(id);
+            if(!ctx) return;
+            if(State.charts[id]) State.charts[id].destroy();
+            State.charts[id] = new Chart(ctx, {
+                type: type,
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderColor: type==='line'?colors:'white', borderWidth:1, fill:opts.fill, tension:opts.tension||0 }] },
+                options: { 
+                    responsive:true, maintainAspectRatio:false, indexAxis: opts.axis||'x',
+                    plugins: { 
+                        legend: { display: type!=='bar' && type!=='line' && type!=='scatter', position:'bottom', labels:{font:{size:10}} },
+                        datalabels: { display: opts.labels || type==='doughnut' || type==='pie', color: type==='line'?'#312E81':'white', font:{weight:'bold', size:10}, align: type==='line'?'top':'center' }
+                    },
+                    scales: opts.scales || {}
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function searchTable(id, term) {
+            const rows = document.querySelectorAll(`#${id} tbody tr`);
+            rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(term.toLowerCase()) ? '' : 'none');
+        }
+
+        function countBy(arr, key) {
+            const r = {}; arr.forEach(x => { const k=x[key]||'N/A'; r[k]=(r[k]||0)+1; }); return r;
+        }
+
+        function isCritical(r) { return ['SIM','YES'].includes(String(r['CRITICAL_TALENT']).toUpperCase()); }
+        function setVal(id, v) { document.getElementById(id).innerText = v; }
+        function setTxt(id, v) { document.getElementById(id).innerText = v; }
+        function fmtDate(v) { 
+            if(!v) return ""; 
+            try { return (typeof v === 'number' ? new Date((v-25569)*864e5) : new Date(v)).toISOString().slice(0,7); } catch { return ""; }
+        }
+
+        // Init
+        document.getElementById('upload-modal').classList.remove('hidden');
+
+    </script>
+</body>
+</html>
